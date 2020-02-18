@@ -18,8 +18,17 @@ def accept(sock, mask):
 
 
 def read(conn, mask):
-    data = conn.recv(1000)
-    msg = json.loads(data.decode())
+    raw_msg = ""
+    while True:
+        data = conn.recv(1).decode()
+        if data == "\t":
+            break
+        else:
+            raw_msg = raw_msg + data
+
+    msg = json.loads(raw_msg)
+    print(msg)
+    print(raw_msg)
     if msg['op'] == "register":
         register(conn, msg['user'])
     if msg['op'] == "message":
@@ -27,9 +36,12 @@ def read(conn, mask):
     if msg['op'] == "deregister":
         deregister(conn)
 
+
 def send(dest, msg):
-    dest.send(json.dumps(msg).encode('utf-8'))
-    
+    m = json.dumps(msg).replace("\t", "    ") + "\t"
+    dest.sendall(m.encode('utf-8'))
+
+
 def register(conn, user):
     clients.append({"connection": conn, "username": user})
     print(f"user '{user}' with connection {conn.getpeername()} was registered")
@@ -38,6 +50,7 @@ def register(conn, user):
 def forward(source, msg):
     src_addr = source.getpeername()
     # get username
+    print(clients)
     for c in clients:
         if c["connection"] == source:
             src_username = c['username']
