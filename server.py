@@ -25,10 +25,8 @@ def read(conn, mask):
             break
         else:
             raw_msg = raw_msg + data
-
     msg = json.loads(raw_msg)
-    print(msg)
-    print(raw_msg)
+
     if msg['op'] == "register":
         register(conn, msg['user'])
     if msg['op'] == "message":
@@ -50,7 +48,6 @@ def register(conn, user):
 def forward(source, msg):
     src_addr = source.getpeername()
     # get username
-    print(clients)
     for c in clients:
         if c["connection"] == source:
             src_username = c['username']
@@ -59,9 +56,9 @@ def forward(source, msg):
     # forward para todos os restantes clients
     frw = {"op": "message", "sender": src_username, "data": msg}
     for c in clients:
-        if c['connection'] is source:
+        if c['connection'] is not source:
             send(c['connection'], frw)
-            print(f"forwarded message to {src_username}")
+            print(f"forwarded message to {c['username']}")
 
 
 def deregister(conn):

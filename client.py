@@ -28,21 +28,19 @@ def read(conn, mask):
     while True:
         data = conn.recv(1).decode()
         if data == "\t":
-            delimiter = True
+            break
         else:
             raw_msg = raw_msg + data
     msg = json.loads(raw_msg)
-    print(msg)
+    print(f"{msg['sender']}: {msg['data']}")
 
 
 def got_keyboard_data(stdin, mask):
     data = stdin.read()
     if data in '\r\n':
         sys.exit(0)
-
-    msg = {"op": "message", "data": data}
+    msg = {"op": "message", "data": data[:-1]}
     send(sock, msg)
-    print(data, end='')
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
