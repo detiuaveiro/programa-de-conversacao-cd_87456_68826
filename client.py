@@ -1,3 +1,4 @@
+import datetime
 import socket
 import json
 import time
@@ -39,6 +40,10 @@ def got_keyboard_data(stdin, mask):
     data = stdin.read()
     if data in '\r\n':
         sys.exit(0)
+    now = datetime.datetime.now()
+    timestamp = str(now.strftime("%Y-%m-%d %H:%M"))
+    data[:-1]
+    data = timestamp + " - " + data
     msg = {"op": "message", "data": data[:-1]}
     send(sock, msg)
 
