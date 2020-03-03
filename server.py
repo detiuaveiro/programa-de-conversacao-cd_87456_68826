@@ -9,7 +9,7 @@ PORT = 5000               # Arbitrary non-privileged port
 sel = selectors.DefaultSelector()
 
 
-clients = []
+clients = {}
 
 
 def accept(sock, mask):
@@ -23,16 +23,18 @@ def read(conn, mask):
     raw_msg = ""
     while True:
         data = conn.recv(1).decode()
+        if not data:
+            deregister(conn)
+            return
         if data == "\t":
             break
         else:
             raw_msg = raw_msg + data
     msg = json.loads(raw_msg)
-
     if msg['op'] == "register":
         register(conn, msg['user'])
     if msg['op'] == "message":
-        forward(conn, msg['data'])
+        forward(conn, msg)
     if msg['op'] == "deregister":
         deregister(conn)
 
@@ -43,32 +45,25 @@ def send(dest, msg):
 
 
 def register(conn, user):
-    clients.append({"connection": conn, "username": user})
-    print(f"user '{user}' with connection {conn.getpeername()} was registered")
+    clients[conn] = user
+    print(f"user '{user}' with connection {conn.getpeername()} registered")
 
 
 def forward(source, msg):
     src_addr = source.getpeername()
-    # get username
-    for c in clients:
-        if c["connection"] == source:
-            src_username = c['username']
-            break
-    print(f"recieved message '{msg}' from {src_username} ")
+    src_username = clients[source]
     # forward para todos os restantes clients
-    frw = {"op": "message", "sender": src_username, "data": msg}
+    frw = {"op": "message", "sender": src_username, "data": msg['data'], "timestamp": msg['timestamp']}
     for c in clients:
-        if c['connection'] is not source:
-            send(c['connection'], frw)
-            print(f"forwarded message to {c['username']}")
+        if c is not source:
+            send(c, frw)
+            print(f"forwarded message to {clients[c]}")
 
 
 def deregister(conn):
-    for c in clients:
-        if c["connection"] == conn:
-            clients.remove(c)
-            print(f"user {c['username']} was deregistered")
-            sel.unregister(conn)
+    print(f"user {clients[conn]} deregistered")
+    clients.pop(conn)
+    sel.unregister(conn)
     conn.close()
 
 
